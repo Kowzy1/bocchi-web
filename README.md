@@ -237,6 +237,6 @@ per-character advance widths that the renderer needs.
 - Bundled fonts remain under their own licenses: **Source Han Sans** (Adobe, SIL Open Font
   License 1.1) and **Radikal**. Check the Radikal license before redistributing this repository
   publicly — it may not permit redistribution.
-- The re-implementation code in this repository is released under the [MIT License](LICENSE). That
-  license covers only the original code; the reused artwork, characters and bundled fonts remain
-  under the licences of their respective owners listed above.
+- The re-implementation code in this repository is released under the [MIT License](LICENSE); that
+  license covers only the code authored here. The reused artwork, characters and bundled fonts are
+  not covered by it and remain under the licences of their respective owners listed above.

@@ -9,15 +9,23 @@ Canvas 2D 上下文重放相同的绘制指令、坐标公式、贝塞尔求值�
 
 只复刻前端，不含任何游戏逻辑，也不会向 Minecraft 注入任何东西。
 
+唯一有意的改动：把原模组右侧的按钮栏（单人 / 多人 / 账号管理 / 选项）换成了一个可用的演示
+**登录面板** —— 账号、密码、记住我、一次性密码步骤和已登录的账号视图。它保留了原版的字体、配色
+与悬停动画，账号数据不会离开浏览器（见[范围与已知差异](#范围与已知差异)）。
+
 ![主菜单](screenshots/menu.png)
 
 | 启动页 · 加载中 | 启动页 · TAP TO START |
 | --- | --- |
 | ![加载中](screenshots/splash-loading.png) | ![TAP TO START](screenshots/splash-tap.png) |
 
-| 启动页 → 菜单 过渡 | 主菜单 · 面板展开 |
+| 启动页 → 菜单 过渡 | 登录面板 |
 | --- | --- |
-| ![过渡](screenshots/transition.png) | ![面板展开](screenshots/menu-panel.png) |
+| ![过渡](screenshots/transition.png) | ![登录面板](screenshots/menu-panel.png) |
+
+| 已登录 · 一次性密码 |
+| --- |
+| ![账号视图](screenshots/menu-profile.png) |
 
 <sub>以上截图均为 1920×1080（GUI 缩放 4）。`screenshots/menu-720p.png` 是同一界面在
 1280×720（GUI 缩放 3）下的效果，用来验证整套布局确实由 Minecraft 的 GUI 缩放驱动。</sub>
@@ -71,7 +79,7 @@ node tools/serve.mjs dist 5173
 ## 还原思路
 
 贯穿始终的原则是：**什么都不"修正"**。原码里哪条公式写得奇怪，移植过来就还是那条公式，这样两边
-才能出一样的像素。
+才能出一样的像素。（登录面板是唯一的有意例外，见[范围与已知差异](#范围与已知差异)。）
 
 ### GUI 缩放
 
@@ -186,7 +194,10 @@ python tools/gen-font-metrics.py
 
 - **只绘制作者自己写的那套 UI。** 没有复刻原版 `Screen.renderBackground` 的整屏渐变遮罩；
   Misayos 屏幕本身会画一层不透明渐变，就以它为准。
-- **按钮没有点击行为。** 原模组本身只实现了悬停和面板展开/收起动画，这里也一样。
+- **按钮栏被换成了演示登录面板。** 原模组的单人 / 多人 / 账号管理 / 选项按钮被替换为一个可用的
+  账号 / 密码表单。演示账号为 `admin` / `123456`，登录后进入带一次性密码步骤的已登录视图
+  （注销 / 验证方法 / 管理设备这几个链接只是占位，没有实际行为）。这是一个自包含的前端演示：
+  凭据写死在代码里、只在浏览器内校验，不会发送到任何地方。
 - **没有实现视频背景。** `BackgroundRenderer` / `default.mp4` 在这个界面里被不透明渐变完全盖住，
   游戏内实际不可见。
 - **没有移植 poulsen 菜单。** `poulsen/MainMenuScreen` 在模组里从未被实例化（死代码），所以
@@ -202,5 +213,5 @@ python tools/gen-font-metrics.py
 - 《Bocchi the Rock!（孤独摇滚！）》及其中角色版权归 はまじあき / 芳文社 / CloverWorks 所有。
 - 随仓库分发的字体遵循各自的授权：**Source Han Sans（思源黑体）** 为 Adobe 的 SIL Open Font
   License 1.1；**Radikal** 请自行确认授权后再公开分发本仓库 —— 它可能不允许再分发。
-- 仓库里没有放 LICENSE 文件，因为编写这份移植时拿不到原模组的授权信息；如果你是权利持有人，
-  发布前请补一个。
+- 本仓库中的重实现代码以 [MIT License](LICENSE) 发布。该许可只覆盖你自己写的代码；复用的美术素材、
+  角色与随仓库分发的字体仍沿用上面所列各权利人的原始授权。

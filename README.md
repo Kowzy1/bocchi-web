@@ -9,15 +9,25 @@ a Canvas 2D context replays the same drawing commands, coordinate formulas, Béz
 
 It is a front-end replica only — no game logic, and nothing is injected into Minecraft.
 
+One intentional divergence: the mod's right-hand button column (single player / multiplayer / alt
+manager / options) is replaced by a working demo **login panel** — account, password, remember-me,
+a one-time-password step and a signed-in profile view. It keeps the original fonts, palette and
+hover animation, and the account data never leaves the browser (see
+[Scope and known deviations](#scope-and-known-deviations)).
+
 ![Main menu](screenshots/menu.png)
 
 | Splash — loading | Splash — TAP TO START |
 | --- | --- |
 | ![Splash loading](screenshots/splash-loading.png) | ![Splash tap to start](screenshots/splash-tap.png) |
 
-| Splash → menu transition | Menu, panel expanded |
+| Splash → menu transition | Login panel |
 | --- | --- |
-| ![Transition](screenshots/transition.png) | ![Panel expanded](screenshots/menu-panel.png) |
+| ![Transition](screenshots/transition.png) | ![Login panel](screenshots/menu-panel.png) |
+
+| Signed in — one-time password |
+| --- |
+| ![Profile](screenshots/menu-profile.png) |
 
 <sub>All screenshots are 1920×1080 (GUI scale 4). `screenshots/menu-720p.png` is the same menu at
 1280×720 (GUI scale 3) and shows that the whole layout is driven by Minecraft's GUI scale.</sub>
@@ -73,7 +83,8 @@ Examples:
 ## How the port works
 
 The guiding rule was: **do not "fix" anything.** Where the original has an odd formula, the port
-has the same odd formula, so the two produce the same pixels.
+has the same odd formula, so the two produce the same pixels. (The login panel is the single,
+deliberate exception — see [Scope and known deviations](#scope-and-known-deviations).)
 
 ### GUI scale
 
@@ -196,8 +207,12 @@ per-character advance widths that the renderer needs.
 
 - **Only the authored UI is drawn.** The vanilla `Screen.renderBackground` gradient overlay is not
   replicated; the Misayos screen paints its own opaque gradient, which is treated as the design.
-- **Buttons have no click actions.** The mod itself only implements hover and the panel
-  expand/collapse animation, so neither does this port.
+- **The button column is a demo login panel.** The mod's single player / multiplayer / alt manager /
+  options buttons are replaced with a working account / password form. It accepts the demo
+  credentials `admin` / `123456` and leads to a signed-in view with a one-time-password step
+  (logout / verification / manage-device links are present but inert). It is a self-contained
+  front-end demo: the credentials are hard-coded and checked in the browser, and nothing is sent
+  anywhere.
 - **The video background is not implemented.** `BackgroundRenderer` / `default.mp4` is fully
   covered by the opaque gradient in this screen and is never visible in game.
 - **The poulsen menu is not ported.** `poulsen/MainMenuScreen` is never instantiated in the mod
@@ -215,5 +230,6 @@ per-character advance widths that the renderer needs.
 - Bundled fonts remain under their own licenses: **Source Han Sans** (Adobe, SIL Open Font
   License 1.1) and **Radikal**. Check the Radikal license before redistributing this repository
   publicly — it may not permit redistribution.
-- No license file is included because the original mod's licensing was not available when this
-  port was written; add one before publishing if you are the rights holder.
+- The re-implementation code in this repository is released under the [MIT License](LICENSE). That
+  license covers only the original code; the reused artwork, characters and bundled fonts remain
+  under the licences of their respective owners listed above.

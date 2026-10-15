@@ -24,7 +24,10 @@ class FontRenderer {
     this.family = family;
     this.size = size;
     this.screenSize = size / 2;
-    this.cssFont = `${size}px "${family}"`;
+    // The shipped Source Han Sans subsets only contain Latin glyphs, so CJK
+    // labels fall back to a system font. The advance-width fallback below keeps
+    // the measured width consistent with the full-width glyphs those fonts draw.
+    this.cssFont = `${size}px "${family}", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", "Source Han Sans SC", sans-serif`;
     this.widthCache = new Map();
   }
 
@@ -53,8 +56,11 @@ class FontRenderer {
   charWidth(ch) {
     let width = this.widthCache.get(ch);
     if (width === undefined) {
-      const advance = this.metrics.advances[ch.charCodeAt(0)] ?? 0;
-      width = (advance * this.screenSize) / this.metrics.upem;
+      const advance = this.metrics.advances[ch.charCodeAt(0)];
+      // Glyphs missing from the Latin-only subset (e.g. CJK) render at their
+      // natural full-width advance of one em.
+      const units = advance === undefined ? this.metrics.upem : advance;
+      width = (units * this.screenSize) / this.metrics.upem;
       this.widthCache.set(ch, width);
     }
     return width;
@@ -65,6 +71,23 @@ class FontRenderer {
     let width = 0;
     for (let i = 0; i < text.length; i++) width += this.charWidth(text[i]);
     if (spacing !== 0) width += spacing * text.length;
+    return width;
+  }
+
+  /**
+   * On-screen width of `text` as the browser actually lays it out. Unlike
+   * getStringWidth this accounts for glyphs drawn by a fallback font (CJK, the
+   * password bullet, ...), whose advances are not in the subset metrics. Used
+   * where the measured width must match the drawn glyphs exactly, e.g. the text
+   * caret.
+   */
+  measureWidth(gfx, text) {
+    if (!text) return 0;
+    const ctx = gfx.ctx;
+    ctx.save();
+    ctx.font = this.cssFont;
+    const width = ctx.measureText(text).width / 2;
+    ctx.restore();
     return width;
   }
 

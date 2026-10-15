@@ -79,6 +79,7 @@ export class BocchiApp {
 
     this.onPointerMove = this.onPointerMove.bind(this);
     this.onPointerDown = this.onPointerDown.bind(this);
+    this.onKeyDown = this.onKeyDown.bind(this);
     this.loop = this.loop.bind(this);
   }
 
@@ -119,6 +120,7 @@ export class BocchiApp {
 
     this.canvas.addEventListener('pointermove', this.onPointerMove);
     this.canvas.addEventListener('pointerdown', this.onPointerDown);
+    window.addEventListener('keydown', this.onKeyDown);
     this.frameHandle = requestAnimationFrame(this.loop);
   }
 
@@ -139,6 +141,7 @@ export class BocchiApp {
     cancelAnimationFrame(this.frameHandle);
     this.canvas.removeEventListener('pointermove', this.onPointerMove);
     this.canvas.removeEventListener('pointerdown', this.onPointerDown);
+    window.removeEventListener('keydown', this.onKeyDown);
     clearVirtualTime();
   }
 
@@ -157,22 +160,41 @@ export class BocchiApp {
     if (this.options.panel) this.menu.gui.forceExpand = true;
   }
 
-  onPointerDown() {
-    if (this.splash && this.splash.waitingForInput) this.fadeOut();
-  }
-
-  onPointerMove(event) {
+  /** Pointer position in GUI units, or null when the canvas is not measured. */
+  pointerGui(event) {
     const rect = this.canvas.getBoundingClientRect();
     const dpr = this.devicePixelRatio;
     const deviceWidth = this.canvas.width;
     const deviceHeight = this.canvas.height;
-    if (!deviceWidth || !deviceHeight) return;
-    this.mouseGuiX = Math.trunc(
-      ((event.clientX - rect.left) * dpr * viewport.scaledWidth) / deviceWidth
-    );
-    this.mouseGuiY = Math.trunc(
-      ((event.clientY - rect.top) * dpr * viewport.scaledHeight) / deviceHeight
-    );
+    if (!deviceWidth || !deviceHeight) return null;
+    return {
+      x: Math.trunc(((event.clientX - rect.left) * dpr * viewport.scaledWidth) / deviceWidth),
+      y: Math.trunc(((event.clientY - rect.top) * dpr * viewport.scaledHeight) / deviceHeight),
+    };
+  }
+
+  onPointerDown(event) {
+    if (this.splash && this.splash.waitingForInput) {
+      this.fadeOut();
+      return;
+    }
+    if (this.menu) {
+      const pointer = this.pointerGui(event);
+      if (pointer) this.menu.gui.handleClick(pointer.x, pointer.y);
+    }
+  }
+
+  onPointerMove(event) {
+    const pointer = this.pointerGui(event);
+    if (!pointer) return;
+    this.mouseGuiX = pointer.x;
+    this.mouseGuiY = pointer.y;
+  }
+
+  /** Keyboard entry for the menu's login form. */
+  onKeyDown(event) {
+    if (this.splash || !this.menu) return;
+    if (this.menu.gui.handleKeyDown(event)) event.preventDefault();
   }
 
   resize() {

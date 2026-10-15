@@ -69,7 +69,6 @@ export class MainMenuMisayosScreen {
     gfx.restore();
 
     gfx.popLayer();
-    this.gui.renderPanel(gfx, mouseX, mouseY);
     gfx.popLayer();
   }
 }

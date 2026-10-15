@@ -10,8 +10,9 @@ Canvas 2D 上下文重放相同的绘制指令、坐标公式、贝塞尔求值�
 只复刻前端，不含任何游戏逻辑，也不会向 Minecraft 注入任何东西。
 
 唯一有意的改动：把原模组右侧的按钮栏（单人 / 多人 / 账号管理 / 选项）换成了一个可用的演示
-**登录面板** —— 账号、密码、记住我、一次性密码步骤和已登录的账号视图。它保留了原版的字体、配色
-与悬停动画，账号数据不会离开浏览器（见[范围与已知差异](#范围与已知差异)）。
+**登录面板** —— 账号、密码、记住我、一次性密码步骤和已登录的账号视图。与界面其余部分不同，它是
+用**真实 DOM 节点**搭出来的（而不是画在 canvas 上），所以可以直接在开发者工具里查看、复制和修改。
+它保留了原版的字体、配色与悬停动画，账号数据不会离开浏览器（见[范围与已知差异](#范围与已知差异)）。
 
 ![主菜单](screenshots/menu.png)
 
@@ -79,7 +80,8 @@ node tools/serve.mjs dist 5173
 ## 还原思路
 
 贯穿始终的原则是：**什么都不"修正"**。原码里哪条公式写得奇怪，移植过来就还是那条公式，这样两边
-才能出一样的像素。（登录面板是唯一的有意例外，见[范围与已知差异](#范围与已知差异)。）
+才能出一样的像素。（登录面板是唯一的有意例外：它用 DOM 渲染，而不是画在 canvas 上，见
+[范围与已知差异](#范围与已知差异)。）
 
 ### GUI 缩放
 
@@ -153,6 +155,9 @@ SVG 图标先按目标尺寸离屏渲染，再用 `source-in` 填色 —— 也�
     └── ui/
         ├── common/           # 黑胶、logo 渲染、文本框、呼吸动画
         ├── misayos/          # 主菜单各组件与屏幕
+        │   ├── guiComponent.js   # 登录面板的模型（状态 + 展开/模糊动画）
+        │   ├── guiDom.js         # 登录面板本体（真实 DOM）
+        │   └── panelLayout.js    # 共享的卡片布局常量
         └── splash/           # SplashUI + LoadingAnimateRenderer
 ```
 
@@ -174,7 +179,7 @@ SVG 图标先按目标尺寸离屏渲染，再用 `source-in` 填色 —— 也�
 | `client.ui.mainmenu.misayos.StrokeElementsComponent` | `ui/misayos/strokeElements.js` |
 | `client.ui.mainmenu.misayos.TextElementsComponent` | `ui/misayos/textElements.js` |
 | `client.ui.mainmenu.misayos.MainTachieComponent` | `ui/misayos/mainTachie.js` |
-| `client.ui.mainmenu.misayos.GuiComponent`（+ `childs/*`） | `ui/misayos/guiComponent.js` |
+| `client.ui.mainmenu.misayos.GuiComponent`（+ `childs/*`） | `ui/misayos/guiComponent.js`（模型）、`guiDom.js`（DOM 渲染）、`panelLayout.js` |
 | `client.ui.mainmenu.misayos.MainMenuMisayosScreen` | `ui/misayos/screen.js` |
 | `client.ui.splash.SplashUI` / `LoadingAnimateRenderer` | `ui/splash/splash.js` |
 | `injection.mixins.transformers.MixinSplashOverlay`（时序） | `app.js` 的 `tick()` |
@@ -194,8 +199,10 @@ python tools/gen-font-metrics.py
 
 - **只绘制作者自己写的那套 UI。** 没有复刻原版 `Screen.renderBackground` 的整屏渐变遮罩；
   Misayos 屏幕本身会画一层不透明渐变，就以它为准。
-- **按钮栏被换成了演示登录面板。** 原模组的单人 / 多人 / 账号管理 / 选项按钮被替换为一个可用的
-  账号 / 密码表单。演示账号为 `admin` / `123456`，登录后进入带一次性密码步骤的已登录视图
+- **按钮栏被换成了演示登录面板，且用 DOM 渲染。** 原模组的单人 / 多人 / 账号管理 / 选项按钮被替换为
+  一个可用的账号 / 密码表单。与界面其余部分不同，它是用真实 DOM 节点（`ui/misayos/guiDom.js`）搭出来的，
+  而不是 canvas 绘制调用，所以元素可被查看和复制；canvas 仍然负责它背后的压暗 / 模糊 / 缩放背景。
+  演示账号为 `admin` / `123456`，登录后进入带一次性密码步骤的已登录视图
   （注销 / 验证方法 / 管理设备这几个链接只是占位，没有实际行为）。这是一个自包含的前端演示：
   凭据写死在代码里、只在浏览器内校验，不会发送到任何地方。
 - **没有实现视频背景。** `BackgroundRenderer` / `default.mp4` 在这个界面里被不透明渐变完全盖住，

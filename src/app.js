@@ -12,6 +12,7 @@ import { Assets, loadAssets } from './engine/assets.js';
 import { clamp } from './engine/color.js';
 import { now, setVirtualTime, clearVirtualTime } from './engine/time.js';
 import { MainMenuMisayosScreen } from './ui/misayos/screen.js';
+import { DomLoginPanel } from './ui/misayos/guiDom.js';
 import { SplashUI } from './ui/splash/splash.js';
 
 const FONT_FAMILIES = [
@@ -62,9 +63,14 @@ export class BocchiApp {
     this.mouseGuiX = 0;
     this.mouseGuiY = 0;
     this.devicePixelRatio = 1;
+    // CSS size of the canvas, refreshed by resize() and reused by the DOM panel
+    // so it does not have to re-measure the canvas every frame.
+    this.cssWidth = 1;
+    this.cssHeight = 1;
 
     this.menu = null;
     this.splash = null;
+    this.domPanel = null;
 
     this.actualProgress = 0;
     this.currentProgress = 0;
@@ -79,7 +85,6 @@ export class BocchiApp {
 
     this.onPointerMove = this.onPointerMove.bind(this);
     this.onPointerDown = this.onPointerDown.bind(this);
-    this.onKeyDown = this.onKeyDown.bind(this);
     this.loop = this.loop.bind(this);
   }
 
@@ -120,12 +125,14 @@ export class BocchiApp {
 
     this.canvas.addEventListener('pointermove', this.onPointerMove);
     this.canvas.addEventListener('pointerdown', this.onPointerDown);
-    window.addEventListener('keydown', this.onKeyDown);
     this.frameHandle = requestAnimationFrame(this.loop);
   }
 
   /** Runs the state machine frame by frame from 0 to `at` and leaves that frame on screen. */
   captureTimeline(at) {
+    // The DOM overlay only needs the final frame; syncing it every step would
+    // be needless work while replaying the timeline synchronously.
+    this.suppressDom = true;
     for (let t = 0; t < at; t += this.step) {
       setVirtualTime(t);
       this.resize();
@@ -133,6 +140,7 @@ export class BocchiApp {
     }
     setVirtualTime(at);
     this.resize();
+    this.suppressDom = false;
     this.render();
   }
 
@@ -141,14 +149,19 @@ export class BocchiApp {
     cancelAnimationFrame(this.frameHandle);
     this.canvas.removeEventListener('pointermove', this.onPointerMove);
     this.canvas.removeEventListener('pointerdown', this.onPointerDown);
-    window.removeEventListener('keydown', this.onKeyDown);
     clearVirtualTime();
+    if (this.domPanel) {
+      this.domPanel.destroy();
+      this.domPanel = null;
+    }
   }
 
   showMenu() {
     if (this.menu) return;
     this.menu = new MainMenuMisayosScreen();
     if (this.options.panel) this.menu.gui.forceExpand = true;
+    // The login panel is a DOM subtree; the canvas only draws the backdrop.
+    this.domPanel = new DomLoginPanel(this.menu.gui, this);
   }
 
   /** SplashUI#onBeginFadeOut plus the screen swap from MixinSplashOverlay. */
@@ -174,14 +187,7 @@ export class BocchiApp {
   }
 
   onPointerDown(event) {
-    if (this.splash && this.splash.waitingForInput) {
-      this.fadeOut();
-      return;
-    }
-    if (this.menu) {
-      const pointer = this.pointerGui(event);
-      if (pointer) this.menu.gui.handleClick(pointer.x, pointer.y);
-    }
+    if (this.splash && this.splash.waitingForInput) this.fadeOut();
   }
 
   onPointerMove(event) {
@@ -191,18 +197,14 @@ export class BocchiApp {
     this.mouseGuiY = pointer.y;
   }
 
-  /** Keyboard entry for the menu's login form. */
-  onKeyDown(event) {
-    if (this.splash || !this.menu) return;
-    if (this.menu.gui.handleKeyDown(event)) event.preventDefault();
-  }
-
   resize() {
     const dpr = window.devicePixelRatio || 1;
     const rect = this.canvas.getBoundingClientRect();
     const cssWidth = Math.max(1, Math.round(rect.width));
     const cssHeight = Math.max(1, Math.round(rect.height));
     this.devicePixelRatio = dpr;
+    this.cssWidth = cssWidth;
+    this.cssHeight = cssHeight;
 
     const deviceWidth = Math.max(1, Math.round(cssWidth * dpr));
     const deviceHeight = Math.max(1, Math.round(cssHeight * dpr));
@@ -252,6 +254,7 @@ export class BocchiApp {
 
     gfx.begin();
     if (this.menu) this.menu.render(gfx, this.mouseGuiX, this.mouseGuiY);
+    if (this.domPanel && !this.suppressDom) this.domPanel.sync();
     if (this.splash) {
       this.splash.render(gfx);
       this.splash.renderProgress(gfx, this.splashProgress ?? 0, this.splashFade ?? -1);

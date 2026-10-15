@@ -1,31 +1,51 @@
+/* The canvas panel positions text with the fonts' raw hhea metrics from
+   engine/metrics.js: the baseline always sits `getHeight()` (= 0.872em) below
+   the line-box top. The DOM renderer (ui/misayos/guiDom.js) reuses that same
+   baseline convention, so the fonts declare matching overrides here to keep the
+   browser's line box in step with the canvas. */
 @font-face {
   font-family: 'Bocchi SH Light';
   src: url('/assets/SourceHanSansSC-Light.ttf') format('truetype');
   font-display: block;
+  ascent-override: 87.2%;
+  descent-override: 0%;
+  line-gap-override: 0%;
 }
 
 @font-face {
   font-family: 'Bocchi SH Regular';
   src: url('/assets/SourceHanSansSC-Regular.ttf') format('truetype');
   font-display: block;
+  ascent-override: 87.2%;
+  descent-override: 0%;
+  line-gap-override: 0%;
 }
 
 @font-face {
   font-family: 'Bocchi SH Heavy';
   src: url('/assets/SourceHanSansSC-Heavy.ttf') format('truetype');
   font-display: block;
+  ascent-override: 87.2%;
+  descent-override: 0%;
+  line-gap-override: 0%;
 }
 
 @font-face {
   font-family: 'Bocchi SH Normal';
   src: url('/assets/SourceHanSansSC-Normal.ttf') format('truetype');
   font-display: block;
+  ascent-override: 87.2%;
+  descent-override: 0%;
+  line-gap-override: 0%;
 }
 
 @font-face {
   font-family: 'Bocchi SH Bold';
   src: url('/assets/SourceHanSansSC-Bold.ttf') format('truetype');
   font-display: block;
+  ascent-override: 87.2%;
+  descent-override: 0%;
+  line-gap-override: 0%;
 }
 
 @font-face {

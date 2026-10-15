@@ -9,11 +9,12 @@ a Canvas 2D context replays the same drawing commands, coordinate formulas, Béz
 
 It is a front-end replica only — no game logic, and nothing is injected into Minecraft.
 
-One intentional divergence: the mod's right-hand button column (single player / multiplayer / alt
+One deliberate divergence: the mod's right-hand button column (single player / multiplayer / alt
 manager / options) is replaced by a working demo **login panel** — account, password, remember-me,
-a one-time-password step and a signed-in profile view. It keeps the original fonts, palette and
-hover animation, and the account data never leaves the browser (see
-[Scope and known deviations](#scope-and-known-deviations)).
+a one-time-password step and a signed-in profile view. Unlike the rest of the screen it is built as
+a **real DOM subtree** rather than painted on the canvas, so its elements can be inspected, copied
+and edited like any other DOM. It keeps the original fonts, palette and hover animation, and the
+account data never leaves the browser (see [Scope and known deviations](#scope-and-known-deviations)).
 
 ![Main menu](screenshots/menu.png)
 
@@ -84,7 +85,8 @@ Examples:
 
 The guiding rule was: **do not "fix" anything.** Where the original has an odd formula, the port
 has the same odd formula, so the two produce the same pixels. (The login panel is the single,
-deliberate exception — see [Scope and known deviations](#scope-and-known-deviations).)
+deliberate exception: it is rendered as DOM instead of on the canvas — see
+[Scope and known deviations](#scope-and-known-deviations).)
 
 ### GUI scale
 
@@ -165,6 +167,9 @@ Both are reproduced as written.
     └── ui/
         ├── common/           # album, logo renderer, text boxes, breathing
         ├── misayos/          # the main menu components + screen
+        │   ├── guiComponent.js   # login-panel model (state + expand/blur animation)
+        │   ├── guiDom.js         # the login panel, rendered as real DOM
+        │   └── panelLayout.js    # shared card layout constants
         └── splash/           # SplashUI + LoadingAnimateRenderer
 ```
 
@@ -186,7 +191,7 @@ Both are reproduced as written.
 | `client.ui.mainmenu.misayos.StrokeElementsComponent` | `ui/misayos/strokeElements.js` |
 | `client.ui.mainmenu.misayos.TextElementsComponent` | `ui/misayos/textElements.js` |
 | `client.ui.mainmenu.misayos.MainTachieComponent` | `ui/misayos/mainTachie.js` |
-| `client.ui.mainmenu.misayos.GuiComponent` (+ `childs/*`) | `ui/misayos/guiComponent.js` |
+| `client.ui.mainmenu.misayos.GuiComponent` (+ `childs/*`) | `ui/misayos/guiComponent.js` (model), `guiDom.js` (DOM renderer), `panelLayout.js` |
 | `client.ui.mainmenu.misayos.MainMenuMisayosScreen` | `ui/misayos/screen.js` |
 | `client.ui.splash.SplashUI` / `LoadingAnimateRenderer` | `ui/splash/splash.js` |
 | `injection.mixins.transformers.MixinSplashOverlay` (timing) | `app.js`, `tick()` |
@@ -207,12 +212,14 @@ per-character advance widths that the renderer needs.
 
 - **Only the authored UI is drawn.** The vanilla `Screen.renderBackground` gradient overlay is not
   replicated; the Misayos screen paints its own opaque gradient, which is treated as the design.
-- **The button column is a demo login panel.** The mod's single player / multiplayer / alt manager /
-  options buttons are replaced with a working account / password form. It accepts the demo
-  credentials `admin` / `123456` and leads to a signed-in view with a one-time-password step
-  (logout / verification / manage-device links are present but inert). It is a self-contained
-  front-end demo: the credentials are hard-coded and checked in the browser, and nothing is sent
-  anywhere.
+- **The button column is a demo login panel, rendered as DOM.** The mod's single player /
+  multiplayer / alt manager / options buttons are replaced with a working account / password form.
+  Unlike the rest of the screen it is built from real DOM nodes (`ui/misayos/guiDom.js`) instead of
+  canvas draw calls, so the elements can be inspected and copied; the canvas still draws the
+  dim / blur / zoom backdrop behind it. It accepts the demo credentials `admin` / `123456` and leads
+  to a signed-in view with a one-time-password step (logout / verification / manage-device links are
+  present but inert). It is a self-contained front-end demo: the credentials are hard-coded and
+  checked in the browser, and nothing is sent anywhere.
 - **The video background is not implemented.** `BackgroundRenderer` / `default.mp4` is fully
   covered by the opaque gradient in this screen and is never visible in game.
 - **The poulsen menu is not ported.** `poulsen/MainMenuScreen` is never instantiated in the mod
